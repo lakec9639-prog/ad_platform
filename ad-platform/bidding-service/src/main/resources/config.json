@@ -1,0 +1,24 @@
+{
+  "server": {
+    "port": 9090
+  },
+  "redis": {
+    "host": "localhost",
+    "port": 6379,
+    "password": ""
+  },
+  "mysql": {
+    "host": "localhost",
+    "port": 3306,
+    "database": "ad_platform",
+    "user": "root",
+    "password": "root"
+  },
+  "tracking": {
+    "baseUrl": "http://localhost:9090/track"
+  },
+  "bidding": {
+    "timeoutMs": 50,
+    "defaultFloorPrice": 0.01
+  }
+}

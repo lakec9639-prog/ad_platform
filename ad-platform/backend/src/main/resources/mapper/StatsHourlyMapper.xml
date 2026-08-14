@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ad.mapper.StatsHourlyMapper">
+
+    <select id="sumByDateRange" resultType="java.util.Map">
+        SELECT
+            COALESCE(SUM(impressions), 0) AS total_impressions,
+            COALESCE(SUM(clicks), 0) AS total_clicks,
+            COALESCE(SUM(micro_conversions), 0) AS total_micro_conversions,
+            COALESCE(SUM(conversions), 0) AS total_conversions,
+            COALESCE(SUM(new_users), 0) AS total_new_users,
+            COALESCE(SUM(cost), 0) AS total_cost,
+            COALESCE(SUM(gmv), 0) AS total_gmv,
+            CASE WHEN SUM(impressions) > 0 THEN ROUND(SUM(clicks) * 100.0 / SUM(impressions), 4) ELSE 0 END AS ctr,
+            CASE WHEN SUM(clicks) > 0 THEN ROUND(SUM(conversions) * 100.0 / SUM(clicks), 4) ELSE 0 END AS cvr
+        FROM ad_stats_hourly
+        WHERE 1=1
+        <if test="strategyId != null">
+            AND strategy_id = #{strategyId}
+        </if>
+        <if test="campaignId != null">
+            AND campaign_id = #{campaignId}
+        </if>
+        <if test="channel != null and channel != ''">
+            AND channel = #{channel}
+        </if>
+        <if test="startDate != null">
+            AND stat_date >= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND stat_date &lt;= #{endDate}
+        </if>
+    </select>
+
+    <select id="dailyTrends" resultType="java.util.Map">
+        SELECT
+            stat_date,
+            stat_hour,
+            COALESCE(SUM(impressions), 0) AS impressions,
+            COALESCE(SUM(clicks), 0) AS clicks,
+            COALESCE(SUM(micro_conversions), 0) AS micro_conversions,
+            COALESCE(SUM(conversions), 0) AS conversions,
+            COALESCE(SUM(new_users), 0) AS new_users,
+            COALESCE(SUM(cost), 0) AS cost,
+            COALESCE(SUM(gmv), 0) AS gmv
+        FROM ad_stats_hourly
+        WHERE 1=1
+        <if test="strategyId != null">
+            AND strategy_id = #{strategyId}
+        </if>
+        <if test="campaignId != null">
+            AND campaign_id = #{campaignId}
+        </if>
+        <if test="channel != null and channel != ''">
+            AND channel = #{channel}
+        </if>
+        <if test="startDate != null">
+            AND stat_date >= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND stat_date &lt;= #{endDate}
+        </if>
+        GROUP BY stat_date, stat_hour
+        ORDER BY stat_date ASC, stat_hour ASC
+    </select>
+
+    <select id="channelDistribution" resultType="java.util.Map">
+        SELECT
+            channel,
+            COALESCE(SUM(impressions), 0) AS impressions,
+            COALESCE(SUM(clicks), 0) AS clicks,
+            COALESCE(SUM(conversions), 0) AS conversions,
+            COALESCE(SUM(cost), 0) AS cost,
+            COALESCE(SUM(gmv), 0) AS gmv
+        FROM ad_stats_hourly
+        WHERE 1=1
+        <if test="strategyId != null">
+            AND strategy_id = #{strategyId}
+        </if>
+        <if test="startDate != null">
+            AND stat_date >= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND stat_date &lt;= #{endDate}
+        </if>
+        GROUP BY channel
+        ORDER BY cost DESC
+    </select>
+
+    <select id="materialTop" resultType="java.util.Map">
+        SELECT
+            sm.material_id,
+            m.name AS material_name,
+            m.code AS material_code,
+            COALESCE(SUM(s.impressions), 0) AS impressions,
+            COALESCE(SUM(s.clicks), 0) AS clicks,
+            COALESCE(SUM(s.conversions), 0) AS conversions,
+            COALESCE(SUM(s.cost), 0) AS cost
+        FROM ad_stats_hourly s
+        LEFT JOIN ad_strategy_material sm ON s.strategy_id = sm.strategy_id
+        LEFT JOIN ad_material m ON sm.material_id = m.id
+        WHERE 1=1
+        <if test="startDate != null">
+            AND s.stat_date >= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND s.stat_date &lt;= #{endDate}
+        </if>
+        GROUP BY sm.material_id, m.name, m.code
+        ORDER BY cost DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="strategyPerformance" resultType="java.util.Map">
+        SELECT
+            s.strategy_id,
+            st.name AS strategy_name,
+            COALESCE(SUM(s.impressions), 0) AS impressions,
+            COALESCE(SUM(s.clicks), 0) AS clicks,
+            COALESCE(SUM(s.conversions), 0) AS conversions,
+            COALESCE(SUM(s.cost), 0) AS cost,
+            COALESCE(SUM(s.gmv), 0) AS gmv,
+            CASE WHEN SUM(impressions) > 0 THEN ROUND(SUM(clicks) * 100.0 / SUM(impressions), 4) ELSE 0 END AS ctr,
+            CASE WHEN SUM(clicks) > 0 THEN ROUND(SUM(conversions) * 100.0 / SUM(clicks), 4) ELSE 0 END AS cvr
+        FROM ad_stats_hourly s
+        LEFT JOIN ad_strategy st ON s.strategy_id = st.id
+        WHERE 1=1
+        <if test="startDate != null">
+            AND s.stat_date >= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND s.stat_date &lt;= #{endDate}
+        </if>
+        GROUP BY s.strategy_id, st.name
+        ORDER BY cost DESC
+    </select>
+
+</mapper>
